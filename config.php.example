@@ -1,0 +1,10 @@
+<?php
+define('DB_HOST', 'localhost');
+define('DB_USERNAME','rsvp');
+define('DB_PASSWORD','mypassword');
+define('DB_NAME','rsvp');
+define('DB_PORT', 3306);
+define('LOG_PATH', 'C:/php/logs');
+define('DEBUG', false);
+define('PINGBACK_KEY', 'mykey');
+?>
