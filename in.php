@@ -14,21 +14,23 @@ $reason = $_POST["Reason"] ?? null;
 $pingUsername = $_POST["pingUsername"] ?? null;
 $pingbackkey = $_POST["pingbackkey"] ?? null;
 
-if ($_SERVER['REMOTE_ADDR'] !== $voterIP) {
-    http_response_code(403);
-    log_info("Mismatching IPs for user $pingUsername, expected ".$_SERVER["REMOTE_ADDR"].", got $voterIP");
-    exit("Wrong IP");
-}
+$requestIP = $_SERVER['REMOTE_ADDR'];
+// Gtop ip is different
+// if ($_SERVER['REMOTE_ADDR'] !== $voterIP) {
+//     http_response_code(403);
+//     log_info("Mismatching IPs for user $pingUsername, expected ".$_SERVER["REMOTE_ADDR"].", got $voterIP");
+//     exit("Wrong IP");
+// }
 
 if ($pingbackkey !== PINGBACK_KEY) {
     http_response_code(403);
-    log_info("User $pingUsername tried voting with invalid pingback key '$pingbackkey' from IP $voterIP");
+    log_info("User $pingUsername tried voting with invalid pingback key '$pingbackkey' from IP $voterIP ($requestIP)");
     exit("Invalid pingback key");
 }
 
 if ($success != 0) {
     http_response_code(403);
-    log_info("User $pingUsername failed vote due to $reason from IP $voterIP");
+    log_info("User $pingUsername failed vote due to $reason from IP $voterIP ($requestIP)");
     exit("Voting failed due to $reason");
 }
 
@@ -47,7 +49,7 @@ if (is_null($user_result)) {
 
 if (sizeof($user_result) == 0) {
     http_response_code(403);
-    log_info("Tried to vote with unknown username '$pingUsername' from IP $voterIP");
+    log_info("Tried to vote with unknown username '$pingUsername' from IP $voterIP ($requestIP)");
     $context->disconnect();
     exit("Unknown username '$pingUsername'");
 }
@@ -61,7 +63,7 @@ $now = date("Y-m-d H:i:s", $now_time);
 
 if ($ban_expire > $now_time) {
     http_response_code(403);
-    log_info("Banned user $username (userid $userid) tried voting from IP $voterIP");
+    log_info("Banned user $username (userid $userid) tried voting from IP $voterIP ($requestIP)");
     exit("User is banned");
 }
 
@@ -75,7 +77,7 @@ if (is_null($last_vote)) {
     $hours_ago = ($now_time - $then) / 3600;
     if ($hours_ago < 12) {
         http_response_code(403);
-        log_info("User $username ($userid) tried voting again after only $hours_ago hours from IP $voterIP");
+        log_info("User $username ($userid) tried voting again after only $hours_ago hours from IP $voterIP ($requestIP)");
         exit("Already voted less than 12 hours ago");
     }
 }
