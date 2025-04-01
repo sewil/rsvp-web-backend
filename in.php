@@ -90,4 +90,6 @@ if (is_null($vote_result)) {
 }
 
 $context->disconnect();
+
+log_info("User $username ($userid) voted successfully from IP $voterIP ($requestIP)");
 http_response_code(200);
