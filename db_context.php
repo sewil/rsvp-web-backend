@@ -4,76 +4,62 @@ require_once 'logger.php';
 
 class db_context {
     private $connection;
-    function connect() {
-        try {
-            $this->connection = mysqli_connect(DB_HOST, DB_USERNAME, DB_PASSWORD, DB_NAME, DB_PORT);
-            if ($this->connection->connect_errno) {
-                log_error('MySQL connection error: ' . $this->connection->connect_error);
-                return null;
-            }
-            // $this->connection->set_charset("utf8");
-            return $this->connection;
-        } catch (Exception $e) {
-            log_error('MySQL connection exception: ' . $e->getMessage());
-            return null;
+    private $stmt;
+    function open() {
+        $this->connection = mysqli_connect(DB_HOST, DB_USERNAME, DB_PASSWORD, DB_NAME, DB_PORT);
+        $this->stmt = null;
+        if ($this->connection->connect_errno) {
+            throw new Exception('MySQL connection error: ' . $this->connection->connect_error);
         }
+        // $this->connection->set_charset("utf8");
+        return $this;
     }
-    function disconnect() {
+    function close() {
         mysqli_close($this->connection);
+        $this->connection = null;
+        $this->close_stmt();
+    }
+    function close_stmt() {
+        if ($this->stmt == null) return;
+        mysqli_stmt_close($this->stmt);
+        $this->stmt = null;
     }
     function check_error() {
         if ($this->connection->errno) {
-            log_error('MySQL error: ' . $this->connection->error);
-            return true;
-        } else {
-            return false;
+            throw new Exception('MySQL error: ' . $this->connection->error);
         }
     }
-    function query($sql, $param_types, ...$params) {
-        try {
-            $connection = $this->connection;
-            if ($params != null && $param_types != null) {
-                $stmt = $this->prepare($sql);
-                $stmt->bind_param($param_types, ...$params);
-                $result = $this->execute($stmt, true);
-            } else {
-                $result = mysqli_query($connection, $sql);
-            }
-            if ($this->check_error()) return null;
-            else if ($result != null) {
-                return $this->fetch($result);
-            } else {
-                return True;
-            }
-        } catch (Exception $e) {
-            log_error("MySQL exception: " . $e->getMessage());
-            return null;
-        }
-    }
-    function prepare($sql) {
+    function prepare($sql, $param_types, ...$params) {
         $connection = $this->connection;
+        $this->stmt = null;
         $stmt = $connection->prepare($sql);
-        if($stmt === false) {
-            log_error('Wrong SQL: ' . $sql . ' Error: ' . $connection->errno . ' ' . $connection->error, E_USER_ERROR);
+        if(!$stmt) {
+            throw new Exception('Wrong SQL: ' . $sql . ' Error: ' . $connection->errno . ' ' . $connection->error);
         }
-        return $stmt;
+        $this->check_error();
+        $stmt->bind_param($param_types, ...$params);
+        $this->stmt = $stmt;
+        return $this;
     }
-    function execute($stmt, $getResult = false) {
-        if(!$stmt->execute()) {
-            log_error($stmt->error);
+    function execute() {
+        $stmt = $this->stmt;
+        if (!$stmt) {
+            throw new Exception("Can't execute invalid statement");
+        } else if (!$stmt->execute()) {
+            throw new Exception('Statement execution failed: ' . $stmt->error);
         }
-        if($getResult) {
-            if($result = $stmt->get_result()) {
-                $stmt->close();
-                return $result;
-            } else {
-                log_error($stmt->error);
-            }
-        }
-        $stmt->close();
-        return null;
+        $this->check_error();
+        return $this;
     }
-    function fetch($result) {
+    function get_result() {
+        $stmt = $this->stmt;
+        if (!$stmt) {
+            throw new Exception("Can't execute invalid statement");
+        } else if (!$result = $stmt->get_result()) {
+            throw new Exception("Error getting result");
+        }
+        $this->check_error();
+        $this->close_stmt();
         $rows = [];
         while ($row = $result->fetch_assoc()) {
             $rows[] = $row;
