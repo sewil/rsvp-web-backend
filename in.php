@@ -29,8 +29,8 @@ if ($pingbackkey !== PINGBACK_KEY) {
 }
 
 if ($success != 0) {
-    http_response_code(403);
-    log_info("User $pingUsername failed vote due to $reason from IP $voterIP ($requestIP)");
+    http_response_code(200);
+    log_info("User $pingUsername failed vote due to '$reason' from IP $voterIP ($requestIP)");
     exit("Voting failed due to $reason");
 }
 
