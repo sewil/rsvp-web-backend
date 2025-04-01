@@ -62,7 +62,7 @@ try {
         $then = strtotime($last_vote[0]["vote_date"]);
         $hours_ago = ($now_time - $then) / 3600;
         if ($hours_ago < 12) {
-            http_response_code(403);
+            http_response_code(200);
             log_info("User $username ($userid) tried voting again after only $hours_ago hours from IP $voterIP ($requestIP)");
             exit("Already voted less than 12 hours ago");
         }
