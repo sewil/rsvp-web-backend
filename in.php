@@ -34,6 +34,12 @@ if ($success != 0) {
     exit("Voting failed due to $reason");
 }
 
+if (!$pingUsername) {
+    http_response_code(200);
+    log_info("Empty username from IP $voterIP ($requestIP)");
+    exit("Empty username");
+}
+
 try {
     $context = new db_context()->open();
     $user_result = $context->prepare("SELECT ID, username, ban_expire FROM users WHERE username = ?", 's', $pingUsername)->execute()->get_result();
