@@ -4,47 +4,60 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "7605a778b951f1f7084eaab567295204",
+    "content-hash": "ad37feb09ff41c0ae2ac7c0e3517adcb",
     "packages": [
         {
-            "name": "lfkeitel/phptotp",
-            "version": "v1.1.0",
+            "name": "greymich/php-totp",
+            "version": "2.0.0",
             "source": {
                 "type": "git",
-                "url": "https://github.com/lfkeitel/php-totp.git",
-                "reference": "5b1673e895f857856b3e75ccb442855771c9b9be"
+                "url": "https://github.com/sunnyvision/php-totp.git",
+                "reference": "1f88bdf47e0e4bae07f2d94bdd67aebdc56b54c2"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/lfkeitel/php-totp/zipball/5b1673e895f857856b3e75ccb442855771c9b9be",
-                "reference": "5b1673e895f857856b3e75ccb442855771c9b9be",
+                "url": "https://api.github.com/repos/sunnyvision/php-totp/zipball/1f88bdf47e0e4bae07f2d94bdd67aebdc56b54c2",
+                "reference": "1f88bdf47e0e4bae07f2d94bdd67aebdc56b54c2",
                 "shasum": ""
             },
             "require": {
-                "php": "^5.6 || ^7.0 || ^8.0"
+                "php": ">=5.6"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^8.0"
             },
             "type": "library",
             "autoload": {
                 "psr-4": {
-                    "lfkeitel\\phptotp\\": "src/"
+                    "Greymich\\TOTP\\": "src/"
                 }
             },
             "notification-url": "https://packagist.org/downloads/",
             "license": [
                 "MIT"
             ],
-            "description": "TOTP/HOTP library for PHP",
+            "authors": [
+                {
+                    "name": "Michael Tam",
+                    "email": "h.y.michael@icloud.com"
+                },
+                {
+                    "name": "Michael Tam",
+                    "email": "michael@sunnyvision.com"
+                }
+            ],
+            "description": "PHP TOTP implementation for rfc6238 ",
             "keywords": [
-                "Authentication",
-                "hotp",
-                "totp",
-                "two-factor"
+                "One Time Password",
+                "composer",
+                "php",
+                "totp"
             ],
             "support": {
-                "issues": "https://github.com/lfkeitel/php-totp/issues",
-                "source": "https://github.com/lfkeitel/php-totp/tree/v1.1.0"
+                "issues": "https://github.com/sunnyvision/php-totp/issues",
+                "source": "https://github.com/sunnyvision/php-totp/tree/2.0"
             },
-            "time": "2022-04-07T20:52:00+00:00"
+            "time": "2021-05-07T09:54:52+00:00"
         },
         {
             "name": "phpmailer/phpmailer",

@@ -2,7 +2,6 @@
 require_once 'vendor/autoload.php';
 require_once 'config.php';
 use Bcrypt\Bcrypt;
-use lfkeitel\phptotp\{Base32,Totp};
 
 function hashPassword(string $password): string {
     $bcrypt = new Bcrypt();
@@ -47,8 +46,8 @@ function decryptToken(string $token): ?array {
     return is_array($data) ? $data : null;
 }
 
-function verifyTOTP($secret, $token) {
-    $actualToken = (new Totp())->GenerateToken($secret);
-    return $token !== $actualToken;
+function verifyTOTP(string $secret, string $token): bool {
+    $otp = new Greymich\TOTP\TOTP($secret);
+    return hash_equals( $otp->get(), $token );
 }
 ?>
