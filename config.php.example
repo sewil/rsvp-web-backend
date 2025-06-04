@@ -7,4 +7,11 @@ define('DB_PORT', 3306);
 define('LOG_PATH', 'C:/php/logs');
 define('DEBUG', false);
 define('PINGBACK_KEY', 'mykey');
+define('SMTP_HOST', 'smtp.example.com');
+define('SMTP_PORT', 587);
+define('SMTP_USERNAME', 'admin@example.com');
+define('SMTP_PASSWORD', '123456');
+define('FROM_EMAIL', 'admin@example.com');
+define('BASE_URL', 'http://localhost:9000');
+define('AES_KEY', '123456');
 ?>
