@@ -1,6 +1,7 @@
 {
     "require": {
         "phpmailer/phpmailer": "^6.10",
-        "lfkeitel/phptotp": "^1.0"
+        "lfkeitel/phptotp": "^1.0",
+        "polarising/bcrypt": "^1.0"
     }
 }

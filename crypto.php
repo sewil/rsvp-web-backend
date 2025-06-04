@@ -1,6 +1,20 @@
 <?php
+require_once 'vendor/autoload.php';
 require_once 'config.php';
+use Bcrypt\Bcrypt;
 use lfkeitel\phptotp\{Base32,Totp};
+
+function hashPassword(string $password): string {
+    $bcrypt = new Bcrypt();
+    
+    $hashedPassword = $bcrypt->encrypt($password,'2a', 13);
+    return $hashedPassword;
+}
+
+function verifyPassword(string $password, string $hashedPassword): bool {
+    $bcrypt = new Bcrypt();
+    return $bcrypt->verify($password, $hashedPassword);
+}
 
 function generateToken(array $userData): string {
     // Add a random nonce (prevents token guessing even for same data)

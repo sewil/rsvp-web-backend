@@ -95,7 +95,7 @@ try {
         exit;
     }
 
-    $hashedPassword = password_hash($password, PASSWORD_BCRYPT);
+    $hashedPassword = hashPassword($password);
     $expiresAt = date('Y-m-d H:i:s', time() + (24 * 60 * 60)); // 24 hours
     $userData = [
         'username' => $username,
