@@ -14,14 +14,14 @@ class Database {
         try {
             $this->conn = mysqli_connect(DB_HOST, DB_USERNAME, DB_PASSWORD, DB_NAME, DB_PORT);
         } catch(mysqli_sql_exception $e) {
-            echo "Connection error: " . $e->getMessage();
+            error_log("Connection error: " . $e->getMessage());
         }
         return $this->conn;
     }
 }
 
 function sendVerificationEmail($email, $username, $token) {
-    $verifyUrl = "https://openmg.net/verify.php?token=" . urlencode($token);
+    $verifyUrl = FRONTEND_URL . "/verify.php?token=" . urlencode($token);
     
     $subject = "Verify Your Account";
     

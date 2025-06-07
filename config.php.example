@@ -12,6 +12,7 @@ define('SMTP_PORT', 587);
 define('SMTP_USERNAME', 'admin@example.com');
 define('SMTP_PASSWORD', '123456');
 define('FROM_EMAIL', 'admin@example.com');
-define('BASE_URL', 'http://localhost:9000');
+define('BACKEND_URL', 'http://localhost:9000');
+define('FRONTEND_URL', 'http://localhost:9001');
 define('AES_KEY', '123456');
 ?>

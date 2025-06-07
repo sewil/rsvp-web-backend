@@ -5,10 +5,10 @@ require_once 'crypto.php';
 
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: POST');
+header('Access-Control-Allow-Methods: GET');
 header('Access-Control-Allow-Headers: Content-Type');
 
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     http_response_code(405);
     echo json_encode(['error' => 'Method not allowed']);
     exit;
@@ -20,7 +20,7 @@ try {
     
     if (!$input) {
         // Fallback to POST data
-        $input = $_POST;
+        $input = $_GET;
     }
     
     // Validate required fields
@@ -90,7 +90,7 @@ try {
         'email' => $userRow['email'],
         'date_of_birth' => $userRow['char_delete_password'],
         'referral_code' => $userRow['referral_code'],
-        'token' => urlencode($token),
+        'token' => $token,
         'expires_at' => $expiresAt
     ]);
 } catch (Exception $e) {

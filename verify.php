@@ -3,65 +3,46 @@ require_once 'config.php';
 require_once 'utils.php';
 require_once 'crypto.php';
 
-if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+header('Content-Type: application/json');
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: POST');
+header('Access-Control-Allow-Headers: Content-Type');
+
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
     echo "Method not allowed";
     exit;
 }
 
-if (empty($_GET['token'])) {
-    http_response_code(400);
-    echo "Verification token is required";
-    exit;
-}
-
 try {
-    $token = validateInput($_GET['token']);
+    // Get JSON input
+    $input = json_decode(file_get_contents('php://input'), true);
+    
+    if (!$input) {
+        // Fallback to POST data
+        $input = $_POST;
+    }
+
+    if (empty($input['token'])) {
+        http_response_code(400);
+        echo json_encode(["error" => "Verification token is required" ]);
+        exit;
+    }
+
+    $token = validateInput($input['token']);
 
     // Check if there's pending registration data in session
     $pendingData = decryptToken($token);
     if (!$pendingData) {
         http_response_code(400);
-        echo "
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>Verification Error</title>
-            <meta charset='utf-8'>
-            <style>body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; } .error { color: #dc3545; }</style>
-        </head>
-        <body>
-            <div class='container'>
-                <h1 class='error'>Verification Error</h1>
-                <p>No pending registration found. Please register again.</p>
-                <a href='/index.php?tab=register'>Go to Registration</a>
-            </div>
-        </body>
-        </html>
-        ";
+        echo json_encode(["error" => "Invalid token", "code" => "token_invalid"]);
         exit;
     }
     
     // Check if token has expired
     if (time() > $pendingData['expires_at']) {
         http_response_code(400);
-        echo "
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>Token Expired</title>
-            <meta charset='utf-8'>
-            <style>body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; } .error { color: #dc3545; }</style>
-        </head>
-        <body>
-            <div class='container'>
-                <h1 class='error'>Verification Token Expired</h1>
-                <p>The verification token has expired. Please register again.</p>
-                <a href='/register.html'>Go to Registration</a>
-            </div>
-        </body>
-        </html>
-        ";
+        echo json_encode(["error" => "Expired token", "code" => "token_expired"]);
         exit;
     }
     
@@ -71,7 +52,7 @@ try {
     
     if (!$conn) {
         http_response_code(500);
-        echo "Database connection failed";
+        echo json_encode(["error" => "Database connection failed"]);
         exit;
     }
     
@@ -82,23 +63,7 @@ try {
     $result = $checkStmt->get_result();
     if ($result->num_rows > 0) {
         http_response_code(409);
-        echo "
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>Registration Conflict</title>
-            <meta charset='utf-8'>
-            <style>body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; } .error { color: #dc3545; }</style>
-        </head>
-        <body>
-            <div class='container'>
-                <h1 class='error'>Registration Conflict</h1>
-                <p>Username or email is no longer available. Please register with different credentials.</p>
-                <a href='/register.php'>Go to Registration</a>
-            </div>
-        </body>
-        </html>
-        ";
+        echo json_encode(["error" => "Username or email is no longer available. Please register with different credentials.", "code" => "registration_conflict"]);
         exit;
     }
     
@@ -115,39 +80,16 @@ try {
         $pendingData['date_of_birth'],
         $pendingData['referral_code'] ?? NULL
     ])) {
-        // Success page
-        echo "
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>Email Verified</title>
-            <meta charset='utf-8'>
-            <meta name='viewport' content='width=device-width, initial-scale=1'>
-            <style>
-                body { font-family: Arial, sans-serif; text-align: center; margin-top: 50px; }
-                .success { color: #28a745; }
-                .container { max-width: 500px; margin: 0 auto; padding: 20px; }
-                .btn { display: inline-block; padding: 10px 20px; background: #007bff; color: white; text-decoration: none; border-radius: 5px; margin-top: 20px; }
-            </style>
-        </head>
-        <body>
-            <div class='container'>
-                <h1 class='success'>Email Verified Successfully!</h1>
-                <p>Welcome <strong>" . htmlspecialchars($pendingData['username']) . "</strong>!</p>
-                <p>Your account has been activated. You can now log in.</p>
-                <a href='/login.php' class='btn'>Go to Login</a>
-            </div>
-        </body>
-        </html>
-        ";
+        http_response_code(201);
+        echo json_encode(["success" => true, "message" => "Your account has been activated. You can now log in."]);
     } else {
         http_response_code(500);
-        echo "Failed to create user account";
+        echo json_encode(["error" => "Failed to create user account. Please try again later."]);
     }
     
 } catch (Exception $e) {
     http_response_code(500);
     error_log($e);
-    echo "Server error. Please try again later.";
+    echo json_encode(["error" => "Server error. Please try again later."]);
 }
 ?>
