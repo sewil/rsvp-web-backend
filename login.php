@@ -2,6 +2,7 @@
 require_once 'config.php';
 require_once 'utils.php';
 require_once 'crypto.php';
+require_once 'logger.php';
 
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
@@ -95,6 +96,7 @@ try {
     ]);
 } catch (Exception $e) {
     http_response_code(500);
+    log_error("Server error on login: " . $e->getMessage());
     echo json_encode(['error' => 'Server error. Please try again later.']);
 }
 ?>

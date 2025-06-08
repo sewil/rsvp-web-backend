@@ -1,6 +1,7 @@
 <?php
 require_once 'config.php';
 require_once 'email_phpmailer.php';
+require_once 'logger.php';
 
 class Database {
     private $host = DB_HOST;
@@ -14,7 +15,7 @@ class Database {
         try {
             $this->conn = mysqli_connect(DB_HOST, DB_USERNAME, DB_PASSWORD, DB_NAME, DB_PORT);
         } catch(mysqli_sql_exception $e) {
-            error_log("Connection error: " . $e->getMessage());
+            log_error("Connection error: " . $e->getMessage());
         }
         return $this->conn;
     }

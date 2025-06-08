@@ -3,6 +3,7 @@ require_once 'email_phpmailer.php';
 require_once 'config.php';
 require_once 'utils.php';
 require_once 'crypto.php';
+require_once 'logger.php';
 
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
@@ -107,7 +108,7 @@ try {
     http_response_code(200);
     echo json_encode(["success" => true, "message" => "Verification email sent. Please check your inbox to verify your account."]);
 } catch (Exception $e) {
-    error_log("Server error: " . $e->getMessage());
+    log_error("Server error: " . $e->getMessage());
     http_response_code(500);
     echo json_encode(["error" => "Server error. Please try again later."]);
 }

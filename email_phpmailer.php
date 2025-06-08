@@ -9,10 +9,12 @@ use PHPMailer\PHPMailer\Exception;
 function sendEmailWithPHPMailer($to, $subject, $htmlBody, $textBody = '') {
     $mail = new PHPMailer(true);
     try {
-        $mail->SMTPDebug = SMTP::DEBUG_SERVER; // 0 = off, 1 = client, 2 = client and server
-        $mail->Debugoutput = function($str, $level) {
-            error_log("PHPMailer Debug ($level): $str");
-        };
+        if (DEBUG) {
+            $mail->SMTPDebug = SMTP::DEBUG_SERVER; // 0 = off, 1 = client, 2 = client and server
+            $mail->Debugoutput = function($str, $level) {
+                log_info("PHPMailer Debug ($level): $str");
+            };
+        }
 
         // Server settings
         $mail->isSMTP();
@@ -50,7 +52,7 @@ function sendEmailWithPHPMailer($to, $subject, $htmlBody, $textBody = '') {
         $mail->send();
         return true;
     } catch (Exception $e) {
-        error_log("PHPMailer Error: {$mail->ErrorInfo}");
+        log_error("PHPMailer Error: {$mail->ErrorInfo}");
         return false;
     }
 }

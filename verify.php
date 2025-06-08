@@ -2,6 +2,7 @@
 require_once 'config.php';
 require_once 'utils.php';
 require_once 'crypto.php';
+require_once 'logger.php';
 
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
@@ -13,6 +14,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     echo "Method not allowed";
     exit;
 }
+
+$requestIP = $_SERVER['REMOTE_ADDR'];
 
 try {
     // Get JSON input
@@ -81,15 +84,19 @@ try {
         $pendingData['referral_code'] ?? NULL
     ])) {
         http_response_code(201);
+        $email = $pendingData['email'];
+        $username = $pendingData['username'];
+        $dob = $pendingData['date_of_birth'];
+        $referralCode = $pendingData['referral_code'];
+        log_discord("IP `$requestIP` verified and registered a new account with email `$email`, username `$username`, DoB `$dob`, and referral code `$referralCode`.");
         echo json_encode(["success" => true, "message" => "Your account has been activated. You can now log in."]);
     } else {
         http_response_code(500);
         echo json_encode(["error" => "Failed to create user account. Please try again later."]);
     }
-    
 } catch (Exception $e) {
     http_response_code(500);
-    error_log($e);
+    log_error($e);
     echo json_encode(["error" => "Server error. Please try again later."]);
 }
 ?>

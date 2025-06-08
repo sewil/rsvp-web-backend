@@ -15,4 +15,5 @@ define('FROM_EMAIL', 'admin@example.com');
 define('BACKEND_URL', 'http://localhost:9000');
 define('FRONTEND_URL', 'http://localhost:9001');
 define('AES_KEY', '123456');
+define('DISCORD_WEBHOOK_URL', '');
 ?>

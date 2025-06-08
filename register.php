@@ -2,6 +2,7 @@
 require_once 'config.php';
 require_once 'utils.php';
 require_once 'crypto.php';
+require_once 'logger.php';
 
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
@@ -13,6 +14,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     echo json_encode(['error' => 'Method not allowed']);
     exit;
 }
+
+$requestIP = $_SERVER['REMOTE_ADDR'];
 
 try {
     // Get JSON input
@@ -124,6 +127,7 @@ try {
     // Send verification email
     if (sendVerificationEmail($email, $username, $token)) {
         http_response_code(201);
+        log_discord("Sent verification email to `$email` for IP `$requestIP`. Username `$username`, DoB `$dateOfBirth`.");
         echo json_encode([
             'success' => true,
             'message' => 'Registration successful. Please check your email to verify your account.'

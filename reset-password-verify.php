@@ -1,6 +1,7 @@
 <?php
 require_once 'crypto.php';
 require_once 'utils.php';
+require_once 'logger.php';
 
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
@@ -84,7 +85,7 @@ try {
     $stmt = $conn->prepare("UPDATE users SET password = ? WHERE ID = ?");
     if (!$stmt->execute([$hashedPassword, $userID])) {
         http_response_code(500);
-        error_log("Database error updating user password: " . $stmt->error);
+        log_error("Database error updating user password: " . $stmt->error);
         echo json_encode(["error" => "Something went wrong. Please try again later."]);
         exit;
     }
@@ -93,7 +94,7 @@ try {
     echo json_encode(["success" => true, "message" => "Password updated successfully."]);
 } catch (Exception $e) {
     http_response_code(500);
-    error_log("Server error: " . $e->getMessage());
+    log_error("Server error: " . $e->getMessage());
     echo json_encode(["error" => "Server error. Please try again later."]);
 }
 ?>
