@@ -38,6 +38,8 @@ function log_discord(string $message) {
         log_error("Error: call to URL $url failed with status $status, response $json_response, curl_error " . curl_error($curl) . ", curl_errno " . curl_errno($curl));
     }
 
+    log_info($message);
+
     curl_close($curl);
 
     // $response = json_decode($json_response, true);

@@ -16,11 +16,17 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
 
 try {
     $redis = new Redis();
-    $redis->connect('127.0.0.1', 6379);
-    $redis->auth(REDIS_PASSWORD);
+    try {
+        $redis->connect('127.0.0.1', 6379);
+        $redis->auth(REDIS_PASSWORD);
+    } catch (RedisException $e) {
+        $redis = null;
+        log_info("Server info - Redis connection exception: " . $e->getMessage());
+    }
 
     function getPlayersOnline($world, $channel) {
         global $redis;
+        if (!$redis) return 0;
         $key = "online-players-$world-$channel";
         return $redis->get($key);
     }

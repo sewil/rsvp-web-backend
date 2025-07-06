@@ -6,10 +6,10 @@ require_once 'logger.php';
 
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET');
+header('Access-Control-Allow-Methods: POST');
 header('Access-Control-Allow-Headers: Content-Type');
 
-if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
     echo json_encode(['error' => 'Method not allowed']);
     exit;
@@ -25,13 +25,14 @@ try {
     }
     
     // Validate required fields
-    if (empty($input['username']) || empty($input['password'])) {
+    if (empty($input['username']) || empty($input['password'])/* || empty($input['token'])*/) {
         http_response_code(400);
         echo json_encode(['error' => 'Username and password are required']);
         exit;
     }
     
     // Sanitize input
+    // $token = $input['token'];
     $username = validateInput($input['username']);
     $password = $input['password'];
     $securityPin = $input['security_pin'] ?? NULL;
@@ -42,6 +43,22 @@ try {
         echo json_encode(['error' => 'Invalid password']);
         exit;
     }
+
+    // $assessment = create_assessment(
+    //     RECAPTCHA_SECRET,
+    //     $token,
+    //     'rsvp-454314',
+    //     'login'
+    // );
+    // $score = $assessment->getRiskAnalysis()->getScore();
+    // if ($score < 0.6) {
+    //     http_response_code(403);
+    //     log_discord("Login: Verify reCAPTCHA failed for IP '" . $_SERVER['REMOTE_ADDR'] . "' with a score of $score.");
+    //     echo json_encode([
+    //         "error" => "Suspicious activity detected. Please try again later."
+    //     ]);
+    //     exit;
+    // }
     
     // Connect to database
     $database = new Database();
@@ -60,6 +77,10 @@ try {
         http_response_code(401);
         echo json_encode(['error' => 'User not found']);
         exit;
+    } else if ($userRow['gender'] == 11) {
+        http_response_code(401);
+        echo json_encode(['error' => 'Email not verified.', 'code' => 'email_not_verified']);
+        exit;
     }
     
     if (!verifyPassword($password, $userRow['password'])) {
@@ -71,7 +92,7 @@ try {
     if ($userRow['pin_secret']) {
         if (!$securityPin) {
             http_response_code(401);
-            echo json_encode(['error' => 'Security pin required (6 digits)', 'code'=>'totp_required']);
+            echo json_encode(['error' => 'Security pin required (6 digits)', 'code' => 'totp_required']);
             exit;
         } else if (!verifyTOTP($userRow['pin_secret'], $securityPin)) {
             http_response_code(401);
@@ -80,19 +101,28 @@ try {
         }
     }
 
+    $refreshAt = date('Y-m-d H:i:s', time() + (24 * 3600)); // 24 hours
     $expiresAt = date('Y-m-d H:i:s', time() + (30 * 24 * 3600)); // 30 days
-    http_response_code(200);
     $token = generateToken([
-        'user_id' => $userRow['ID'],
         'expires_at' => $expiresAt,
+        'refresh_at' => $refreshAt,
     ]);
+
+    $tokenStmt = $conn->prepare("UPDATE users SET remember_token = ? WHERE ID = ?");
+    if (!$tokenStmt->execute([$token, $userRow['ID']])) {
+        http_response_code(403);
+        log_discord("Login error: Failed setting remember_token for user " . $userRow['ID']);
+        echo json_encode(["error" => "Login failed. Please try again later."]);
+        exit;
+    }
+
+    http_response_code(200);
     echo json_encode([
         'username' => $userRow['username'],
         'email' => $userRow['email'],
         'date_of_birth' => $userRow['char_delete_password'],
         'referral_code' => $userRow['referral_code'],
         'token' => $token,
-        'expires_at' => $expiresAt
     ]);
 } catch (Exception $e) {
     http_response_code(500);

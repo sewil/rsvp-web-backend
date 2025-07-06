@@ -25,18 +25,17 @@ try {
         exit;
     }
 
-    $token = decryptToken($input['token']);
-    if (!$token) {
+    $token = $input['token'];
+    $decryptedToken = decryptToken($token);
+    if (!$decryptedToken) {
         http_response_code(400);
         echo json_encode(["error" => "Invalid token"]);
         exit;
-    } else if (time() > $token['expires_at']) {
+    } else if (time() > $decryptedToken['expires_at']) {
         http_response_code(401);
         echo json_encode(["error" => "Expired token"]);
         exit;
     }
-
-    $userID = $token['user_id'];
 
     $database = new Database();
     $conn = $database->getConnection();
@@ -47,32 +46,40 @@ try {
     }
 
     // Check if user already has a referral code
-    $stmt = $conn->prepare("SELECT ID FROM users WHERE ID = ? AND referral_code IS NOT NULL");
-    $stmt->execute([$userID]);
-    if ($stmt->get_result()->num_rows > 0) {
+    $stmt = $conn->prepare("SELECT * FROM users WHERE remember_token = ? AND gender != 11");
+    $stmt->execute([$token]);
+    $userRow = $stmt->get_result()->fetch_assoc();
+    if (!$userRow) {
         http_response_code(403);
-        echo json_encode(["error" => "You already have a referral code set!"]);
+        echo json_encode(["error" => "User not found."]);
+        exit;
+    } else if ($userRow['referral_code']) {
+        http_response_code(200);
+        echo json_encode([
+            "referral_code" => $referralCode
+        ]);
         exit;
     }
+
+    $userID = $userRow['ID'];
 
     $hash = crc32($userID . random_bytes(16));
     $referralCode = strtoupper(str_pad(dechex($hash), 8, '0', STR_PAD_LEFT));
     $stmt = $conn->prepare("UPDATE users SET referral_code = ? WHERE ID = ?");
-    $stmt->execute([$referralCode, $userID]);
-    if ($stmt->error) {
-        http_response_code(500);
-        log_error("MySQL error when setting referral code for user $userID: " . $stmt->error);
+    if (!$stmt->execute([$referralCode, $userID])) {
+        http_response_code(403);
+        log_discord("Failed setting referral code `$referralCode` for user $userID");
         echo json_encode(["error" => "Something went wrong. Please try again later."]);
         exit;
     }
-    log_discord("Set referral code $referralCode for user $userID");
+    log_discord("Set referral code `$referralCode` for user $userID");
     http_response_code(200);
     echo json_encode([
         "referral_code" => $referralCode
     ]);
 } catch (Exception $e) {
     http_response_code(500);
-    log_error("Server error on refer: " . $e->getMessage());
+    log_discord("Server error on refer: " . $e->getMessage());
     echo json_encode(["error" => "Something went wrong. Please try again later."]);
 }
 ?>

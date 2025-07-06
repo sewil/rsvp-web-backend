@@ -1,4 +1,6 @@
 <?php
+
+use Google\Cloud\Core\Exception\BadRequestException;
 require_once 'config.php';
 require_once 'utils.php';
 require_once 'crypto.php';
@@ -20,34 +22,35 @@ $requestIP = $_SERVER['REMOTE_ADDR'];
 try {
     // Get JSON input
     $input = json_decode(file_get_contents('php://input'), true);
-    
+
     if (!$input) {
         // Fallback to POST data
         $input = $_POST;
     }
-    
+
     // Validate required fields
-    if (empty($input['username']) || empty($input['email']) || empty($input['password'])) {
+    if (empty($input['token']) || empty($input['username']) || empty($input['email']) || empty($input['password'])) {
         http_response_code(400);
         echo json_encode(['error' => 'Username, email, and password are required']);
         exit;
     }
-    
+
     // Sanitize input
+    $token = $input['token'];
     $username = validateInput($input['username']);
     $email = validateInput($input['email']);
     $dateOfBirth = validateInput($input['date_of_birth']);
     $referralCode = ($input['referral_code'] ?? NULL) ? validateInput($input['referral_code']) : NULL;
     $password = $input['password'];
     $password2 = $input['password2'];
-    
+
     // Validate email format
     if (!validateEmail($email)) {
         http_response_code(400);
         echo json_encode(['error' => 'Invalid email format']);
         exit;
     }
-    
+
     // Validate passwords
     if (!validatePassword($password)) {
         http_response_code(400);
@@ -76,17 +79,33 @@ try {
         echo json_encode(['error' => 'Invalid referral code']);
         exit;
     }
-    
+
+    $assessment = create_assessment(
+        RECAPTCHA_SECRET,
+        $token,
+        'rsvp-454314',
+        'signup'
+    );
+    $score = $assessment->getRiskAnalysis()->getScore();
+    if ($score < 0.6) {
+        http_response_code(403);
+        log_discord("Register: Verify reCAPTCHA failed for IP '" . $_SERVER['REMOTE_ADDR'] . "' with a score of $score.");
+        echo json_encode([
+            "error" => "Suspicious activity detected. Please try again later."
+        ]);
+        exit;
+    }
+
     // Connect to database
     $database = new Database();
     $conn = $database->getConnection();
-    
+
     if (!$conn) {
         http_response_code(500);
         echo json_encode(['error' => 'Database connection failed']);
         exit;
     }
-    
+
     // Check if username or email already exists
     $checkQuery = "SELECT id FROM users WHERE username = ? OR email = ?";
     $checkStmt = $conn->prepare($checkQuery);
@@ -100,43 +119,62 @@ try {
 
     $hashedPassword = hashPassword($password);
     $expiresAt = date('Y-m-d H:i:s', time() + (24 * 60 * 60)); // 24 hours
-    $userData = [
-        'username' => $username,
+    $emailToken = generateToken([
         'email' => $email,
-        'password_hash' => $hashedPassword,
-        'expires_at' => $expiresAt,
-        'date_of_birth' => $dateOfBirth
-    ];
+        'expires_at' => $expiresAt
+    ]);
 
     // Check valid referral code if any
     if ($referralCode) {
-        $checkQuery = "SELECT id FROM users WHERE referral_code = ?";
+        $checkQuery = "SELECT ID FROM users WHERE referral_code = ?";
         $checkStmt = $conn->prepare($checkQuery);
         $checkStmt->execute([$referralCode]);
-    
+
         if ($checkStmt->num_rows() == 0) {
             http_response_code(409);
             echo json_encode(['error' => 'Unknown referral code']);
             exit;
         }
-        $userData['referral_code'] = $referralCode;
     }
-    
-    $token = generateToken($userData);
 
-    // Send verification email
-    if (sendVerificationEmail($email, $username, $token)) {
+    // Insert user in table
+    $insertUserQuery = "INSERT INTO users (username, email, password, gender, char_delete_password, referral_code)
+                       VALUES (?, ?, ?, ?, ?, ?)";
+    $insertUserStmt = $conn->prepare($insertUserQuery);
+
+    if (
+        $insertUserStmt->execute([
+            $username,
+            $email,
+            $hashedPassword,
+            11,
+            $dateOfBirth,
+            $referralCode ?? NULL,
+        ])
+    ) {
         http_response_code(201);
-        log_discord("Sent verification email to `$email` for IP `$requestIP`. Username `$username`, DoB `$dateOfBirth`.");
+        log_discord("IP `$requestIP` registered a new account with email `$email`, username `$username`, DoB `$dateOfBirth`, and referral code `$referralCode`.");
         echo json_encode([
-            'success' => true,
-            'message' => 'Registration successful. Please check your email to verify your account.'
+            "success" => true,
+            "message" => "Registration successful. Please check your email to verify your account.",
+            "token" => $emailToken,
+            "user" => [
+                "username" => $username,
+                "email" => $email,
+                "char_delete_password" => $dateOfBirth,
+                "referral_code" => $referralCode
+            ]
         ]);
     } else {
         http_response_code(500);
-        echo json_encode(['error' => 'Failed to send verification email']);
+        echo json_encode(["error" => "Registration failed. Please try again later."]);
     }
+} catch (BadRequestException $e) {
+  http_response_code(400);
+  log_error("Bad request: " . $e->getMessage());
+  echo json_encode(["error" => "Bad request. Please try again later."]);
 } catch (Exception $e) {
+    log_error("Register error: " . $e->getMessage());
     http_response_code(500);
     echo json_encode(['error' => 'Server error. Please try again later.']);
 }

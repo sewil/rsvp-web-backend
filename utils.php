@@ -1,4 +1,6 @@
 <?php
+
+use Google\Cloud\Core\Exception\BadRequestException;
 require_once 'config.php';
 require_once 'email_phpmailer.php';
 require_once 'logger.php';
@@ -21,64 +23,6 @@ class Database {
     }
 }
 
-function sendVerificationEmail($email, $username, $token) {
-    $verifyUrl = FRONTEND_URL . "/verify.php?token=" . urlencode($token);
-    
-    $subject = "Verify Your Account";
-    
-    $htmlBody = "
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset='utf-8'>
-        <title>Verify Your Account</title>
-        <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: #007bff; color: white; padding: 20px; text-align: center; }
-            .content { padding: 20px; background: #f9f9f9; }
-            .button { display: inline-block; padding: 12px 24px; background: #28a745; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
-            .footer { padding: 20px; text-align: center; font-size: 12px; color: #666; }
-        </style>
-    </head>
-    <body>
-        <div class='container'>
-            <div class='header'>
-                <h1>Welcome to OpenMG!</h1>
-            </div>
-            <div class='content'>
-                <h2>Hello $username,</h2>
-                <p>Thank you for registering! Please click the button below to verify your email address:</p>
-                <p style='text-align: center;'>
-                    <a href='$verifyUrl' class='button'>Verify Email Address</a>
-                </p>
-                <p>Or copy and paste this URL into your browser:</p>
-                <p><a href='$verifyUrl'>$verifyUrl</a></p>
-                <p><strong>This link will expire in 24 hours.</strong></p>
-            </div>
-            <div class='footer'>
-                <p>If you didn't create an account, please ignore this email.</p>
-            </div>
-        </div>
-    </body>
-    </html>
-    ";
-    
-    $textBody = "
-    Hello $username,
-    
-    Thank you for registering! Please visit the following URL to verify your email address:
-    
-    $verifyUrl
-    
-    This link will expire in 24 hours.
-    
-    If you didn't create an account, please ignore this email.
-    ";
-    // return mail($email, $subject, $htmlBody);
-    return sendEmailWithPHPMailer($email, $subject, $htmlBody, $textBody);
-}
-
 function validateInput($data) {
     return htmlspecialchars(strip_tags(trim($data)));
 }
@@ -88,7 +32,7 @@ function validateEmail($email) {
 }
 
 function validateDateOfBirth($dateOfBirth) {
-    return preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateOfBirth);
+    return preg_match('/^\d{4}\d{2}\d{2}$/', $dateOfBirth);
 }
 
 function validateReferralCode($referralCode) {
@@ -155,5 +99,66 @@ function getJobName($job) {
         return "GM";
     else
         return "N/A";
+}
+
+// Include Google Cloud dependencies using Composer
+use Google\Cloud\RecaptchaEnterprise\V1\Client\RecaptchaEnterpriseServiceClient;
+use Google\Cloud\RecaptchaEnterprise\V1\Event;
+use Google\Cloud\RecaptchaEnterprise\V1\Assessment;
+use Google\Cloud\RecaptchaEnterprise\V1\CreateAssessmentRequest;
+use Google\Cloud\RecaptchaEnterprise\V1\TokenProperties\InvalidReason;
+
+/**
+  * Create an assessment to analyze the risk of a UI action.
+  * @param string $recaptchaKey The reCAPTCHA key associated with the site/app
+  * @param string $token The generated token obtained from the client.
+  * @param string $project Your Google Cloud Project ID.
+  * @param string $action Action name corresponding to the token.
+  */
+function create_assessment(
+  string $recaptchaKey,
+  string $token,
+  string $project,
+  string $action
+): Assessment {
+  // Create the reCAPTCHA client.
+  // TODO: Cache the client generation code (recommended) or call client.close() before exiting the method.
+  $client = new RecaptchaEnterpriseServiceClient([
+     'credentials' => 'rsvp-454314-250657a03be1.json'
+  ]);
+  $projectName = $client->projectName($project);
+
+  // Set the properties of the event to be tracked.
+  $event = (new Event())
+    ->setSiteKey($recaptchaKey)
+    ->setToken($token);
+
+  // Build the assessment request.
+  $assessment = (new Assessment())
+    ->setEvent($event);
+
+  $request = (new CreateAssessmentRequest())
+  ->setParent($projectName)
+  ->setAssessment($assessment);
+
+  $response = $client->createAssessment($request);
+
+  // Check if the token is valid.
+  if ($response->getTokenProperties()->getValid() == false) {
+    $invalidReason = InvalidReason::name($response->getTokenProperties()->getInvalidReason());
+    throw new BadRequestException('The CreateAssessment() call failed because the token was invalid for the following reason: ' . $invalidReason);
+  }
+
+  // Check if the expected action was executed.
+  if ($response->getTokenProperties()->getAction() == $action) {
+    // Get the risk score and the reason(s).
+    // For more information on interpreting the assessment, see:
+    // https://cloud.google.com/recaptcha-enterprise/docs/interpret-assessment
+    // printf('The score for the protection action is:');
+    // printf($response->getRiskAnalysis()->getScore());
+    return $response;
+  } else {
+    throw new BadRequestException('The action attribute in your reCAPTCHA tag does not match the action you are expecting to score');
+  }
 }
 ?>

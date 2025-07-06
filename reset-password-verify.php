@@ -43,26 +43,19 @@ try {
         exit;
     }
 
-    /*
-    [
-        "expires_at" => $expiresAt,
-        "user_id" => $user["ID"],
-        "username" => $username
-    ]
-    */
-    $token = decryptToken($input['token']);
-    if (!$token) {
+    $decryptedToken = decryptToken($input['token']);
+    if (!$decryptedToken) {
         http_response_code(400);
         echo json_encode(["error" => "Invalid token"]);
         exit;
-    } else if (time() > $token['expires_at']) {
+    } else if (time() > $decryptedToken['expires_at']) {
         http_response_code(401);
         echo json_encode(["error" => "Expired token", "code" => "token_expired"]);
         exit;
     }
-    
-    $userID = $token['user_id'];
-    
+
+    $email = $decryptedToken['email'];
+
     $db = new Database();
     $conn = $db->getConnection();
     if (!$conn) {
@@ -70,31 +63,22 @@ try {
         echo json_encode(["error" => "Database connection failed."]);
         exit;
     }
-    
-    // Check user exists
-    $stmt = $conn->prepare("SELECT ID FROM users WHERE ID = ?");
-    $stmt->execute([$userID]);
-    if ($stmt->get_result()->num_rows == 0) {
-        http_response_code(401);
-        echo json_encode(["error" => "User not found"]);
-        exit;
-    }
 
     // Update user password
     $hashedPassword = hashPassword($password);
-    $stmt = $conn->prepare("UPDATE users SET password = ? WHERE ID = ?");
-    if (!$stmt->execute([$hashedPassword, $userID])) {
-        http_response_code(500);
-        log_error("Database error updating user password: " . $stmt->error);
-        echo json_encode(["error" => "Something went wrong. Please try again later."]);
+    $stmt = $conn->prepare("UPDATE users SET password = ? WHERE email = ? AND gender != 11");
+    if (!$stmt->execute([$hashedPassword, $email])) {
+        http_response_code(403);
+        log_discord("Reset password verify: Failed verifying email `" . $email . "`.");
+        echo json_encode(["error" => "Verification failed. Please try again later."]);
         exit;
     }
 
     http_response_code(200);
-    echo json_encode(["success" => true, "message" => "Password updated successfully."]);
+    echo json_encode(["success" => true, "message" => "Password updated successfully. You may now login with your new password."]);
 } catch (Exception $e) {
     http_response_code(500);
-    log_error("Server error: " . $e->getMessage());
+    log_discord("Reset password verify server error: " . $e->getMessage());
     echo json_encode(["error" => "Server error. Please try again later."]);
 }
 ?>

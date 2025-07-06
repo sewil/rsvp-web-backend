@@ -4,6 +4,11 @@ require_once 'db_context.php';
 require_once 'logger.php';
 require_once 'utils.php';
 
+header('Content-Type: application/json');
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET');
+header('Access-Control-Allow-Headers: Content-Type');
+
 $page_size = 6;
 
 try {
