@@ -34,7 +34,7 @@ try {
 
     $token = validateInput($input['token']);
     $decryptedToken = decryptToken($token);
-    if (!$decryptedToken) {
+    if (!$decryptedToken || !($decryptedToken['expires_at'] ?? NULL)) {
         http_response_code(400);
         echo json_encode(["error" => "Invalid token", "code" => "token_invalid"]);
         exit;
@@ -55,9 +55,10 @@ try {
     }
 
     $updateStmt = $conn->prepare("UPDATE users SET gender = 10 WHERE email = ? AND gender = 11");
-    if (!$updateStmt->execute([$decryptedToken['email']])) {
+    if (!$updateStmt->execute([$decryptedToken['email']]) || $updateStmt->affected_rows == 0) {
         http_response_code(403);
         echo json_encode(["error" => "Failed verifying account. Check that the email exists and the account is not already verified."]);
+        exit;
     }
 
     http_response_code(200);

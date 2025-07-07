@@ -27,17 +27,17 @@ try {
     }
     
     // Validate required fields
-    if (empty($input['token']) || empty($input['subject']) || empty($input['htmlBody']) || empty($input['textBody'])) {
+    if (empty($input['token']) || empty($input['subject']) || empty($input['htmlBody'])) {
         http_response_code(400);
-        echo json_encode(['error' => 'Token is required']);
+        echo json_encode(['error' => 'Token, subject and htmlBody is required']);
         exit;
     }
 
     $token = $input['token'];
     $decryptedToken = decryptToken($token);
-    $subject = validateInput($input['subject']);
-    $htmlBody = validateInput($input['htmlBody']);
-    $textBody = validateInput($input['textBody']);
+    $subject = $input['subject'];
+    $htmlBody = $input['htmlBody'];
+    $textBody = $input['textBody'];
 
     if (!$decryptedToken || !$decryptedToken['email']) {
         http_response_code(400);

@@ -109,7 +109,7 @@ try {
     ]);
 
     $tokenStmt = $conn->prepare("UPDATE users SET remember_token = ? WHERE ID = ?");
-    if (!$tokenStmt->execute([$token, $userRow['ID']])) {
+    if (!$tokenStmt->execute([$token, $userRow['ID']]) || $tokenStmt->affected_rows == 0) {
         http_response_code(403);
         log_discord("Login error: Failed setting remember_token for user " . $userRow['ID']);
         echo json_encode(["error" => "Login failed. Please try again later."]);

@@ -66,7 +66,7 @@ try {
     $hash = crc32($userID . random_bytes(16));
     $referralCode = strtoupper(str_pad(dechex($hash), 8, '0', STR_PAD_LEFT));
     $stmt = $conn->prepare("UPDATE users SET referral_code = ? WHERE ID = ?");
-    if (!$stmt->execute([$referralCode, $userID])) {
+    if (!$stmt->execute([$referralCode, $userID]) || $stmt->affected_rows == 0) {
         http_response_code(403);
         log_discord("Failed setting referral code `$referralCode` for user $userID");
         echo json_encode(["error" => "Something went wrong. Please try again later."]);

@@ -62,14 +62,13 @@ try {
             "refresh_at" => $refreshAt
         ]);
         $refreshStmt = $conn->prepare("UPDATE users SET remember_token = ? WHERE ID = ?");
-        $refreshStmt->execute([$refreshedToken, $userRow['ID']]);
-        $refreshResult = $refreshStmt->get_result();
-        $token = $refreshedToken;
-        if (!$refreshResult) {
+        if (!$refreshStmt->execute([$refreshedToken, $userRow['ID']]) || $refreshStmt->affected_rows == 0) {
             log_discord("Auth error: Failed refreshing token for user " . $userRow['ID']);
             http_response_code(403);
             echo json_encode(["error" => "Authentication failed. Please try again later."]);
             exit;
+        } else {
+            $token = $refreshedToken;
         }
     }
 
