@@ -68,7 +68,7 @@ try {
         'expires_at' => $expiresAt
     ]);
 
-    $verifyUrl = FRONTEND_URL . "/register-confirmation.php?token=" . $emailToken;
+    $verifyUrl = FRONTEND_URL . "/register-confirmation.php?token=" . urlencode($emailToken);
     $success = sendEmailWithPHPMailer($email, "Verify Your Account", "
         <!DOCTYPE html>
         <html>
