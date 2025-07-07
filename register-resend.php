@@ -51,7 +51,7 @@ try {
         exit;
     }
 
-    $checkQuery = "SELECT * FROM users WHERE email = ? AND gender = 11";
+    $checkQuery = "SELECT * FROM users WHERE email = ? AND verified = 0";
     $checkStmt = $conn->prepare($checkQuery);
     $checkStmt->execute([$email]);
     $user = $checkStmt->get_result()->fetch_assoc();

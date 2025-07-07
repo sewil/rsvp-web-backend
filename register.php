@@ -133,8 +133,8 @@ try {
     }
 
     // Insert user in table
-    $insertUserQuery = "INSERT INTO users (username, email, password, gender, char_delete_password, referral_code)
-                       VALUES (?, ?, ?, ?, ?, ?)";
+    $insertUserQuery = "INSERT INTO users (username, email, password, gender, verified, char_delete_password, referral_code)
+                       VALUES (?, ?, ?, ?, ?, ?, ?)";
     $insertUserStmt = $conn->prepare($insertUserQuery);
 
     if (
@@ -142,7 +142,8 @@ try {
             $username,
             $email,
             $hashedPassword,
-            11,
+            10,
+            0,
             $dateOfBirth,
             $referralCode ?? NULL,
         ])

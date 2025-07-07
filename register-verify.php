@@ -54,7 +54,7 @@ try {
         exit;
     }
 
-    $updateStmt = $conn->prepare("UPDATE users SET gender = 10 WHERE email = ? AND gender = 11");
+    $updateStmt = $conn->prepare("UPDATE users SET verified = 1 WHERE email = ? AND verified = 0");
     if (!$updateStmt->execute([$decryptedToken['email']]) || $updateStmt->affected_rows == 0) {
         http_response_code(403);
         echo json_encode(["error" => "Failed verifying account. Check that the email exists and the account is not already verified."]);

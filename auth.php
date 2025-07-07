@@ -45,7 +45,7 @@ try {
         exit;
     }
 
-    $userStmt = $conn->prepare("SELECT * FROM users WHERE remember_token = ? AND gender != 11");
+    $userStmt = $conn->prepare("SELECT * FROM users WHERE remember_token = ? AND verified = 1");
     $userStmt->execute([$token]);
     $userRow = $userStmt->get_result()->fetch_assoc();
     if ($userRow == NULL) {

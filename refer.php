@@ -46,7 +46,7 @@ try {
     }
 
     // Check if user already has a referral code
-    $stmt = $conn->prepare("SELECT * FROM users WHERE remember_token = ? AND gender != 11");
+    $stmt = $conn->prepare("SELECT * FROM users WHERE remember_token = ? AND verified = 1");
     $stmt->execute([$token]);
     $userRow = $stmt->get_result()->fetch_assoc();
     if (!$userRow) {

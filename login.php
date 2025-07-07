@@ -77,7 +77,7 @@ try {
         http_response_code(401);
         echo json_encode(['error' => 'User not found']);
         exit;
-    } else if ($userRow['gender'] == 11) {
+    } else if ($userRow['verified'] == 0) {
         http_response_code(401);
         echo json_encode(['error' => 'Email not verified.', 'code' => 'email_not_verified']);
         exit;
