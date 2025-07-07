@@ -29,14 +29,14 @@ try {
     }
 
     // Validate required fields
-    if (empty($input['token']) || empty($input['username']) || empty($input['email']) || empty($input['password'])) {
+    if (empty($input['captchaToken']) || empty($input['username']) || empty($input['email']) || empty($input['password'])) {
         http_response_code(400);
         echo json_encode(['error' => 'Username, email, and password are required']);
         exit;
     }
 
     // Sanitize input
-    $token = $input['token'];
+    $captchaToken = $input['captchaToken'];
     $username = validateInput($input['username']);
     $email = validateInput($input['email']);
     $dateOfBirth = validateInput($input['date_of_birth']);
@@ -82,7 +82,7 @@ try {
 
     $assessment = create_assessment(
         RECAPTCHA_SECRET,
-        $token,
+        $captchaToken,
         'rsvp-454314',
         'signup'
     );
@@ -118,11 +118,6 @@ try {
     }
 
     $hashedPassword = hashPassword($password);
-    $expiresAt = date('Y-m-d H:i:s', time() + (24 * 60 * 60)); // 24 hours
-    $emailToken = generateToken([
-        'email' => $email,
-        'expires_at' => $expiresAt
-    ]);
 
     // Check valid referral code if any
     if ($referralCode) {
@@ -132,7 +127,7 @@ try {
 
         if ($checkStmt->num_rows() == 0) {
             http_response_code(409);
-            echo json_encode(['error' => 'Unknown referral code']);
+            echo json_encode(['error' => 'Invalid referral code']);
             exit;
         }
     }
@@ -157,7 +152,6 @@ try {
         echo json_encode([
             "success" => true,
             "message" => "Registration successful. Please check your email to verify your account.",
-            "token" => $emailToken,
             "user" => [
                 "username" => $username,
                 "email" => $email,

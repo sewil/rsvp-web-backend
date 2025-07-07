@@ -57,7 +57,6 @@ try {
         echo json_encode(["success" => true, "message" => "Verification email sent. Please check your inbox to verify your account."]);
         exit;
     }
-    $username = $user['username'];
     $expiresAt = date('Y-m-d H:i:s', time() + (24 * 60 * 60)); // 24 hours
     $token = generateToken([
         "expires_at" => $expiresAt,
@@ -68,8 +67,6 @@ try {
     echo json_encode([
         "success" => true,
         "message" => "Verification email sent. Please check your inbox to verify your account.",
-        "token" => $token,
-        "username" => $username
     ]);
 } catch (Exception $e) {
     log_error("Server error: " . $e->getMessage());
