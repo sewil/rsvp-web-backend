@@ -124,7 +124,7 @@ function create_assessment(
   // Create the reCAPTCHA client.
   // TODO: Cache the client generation code (recommended) or call client.close() before exiting the method.
   $client = new RecaptchaEnterpriseServiceClient([
-     'credentials' => 'rsvp-454314-250657a03be1.json'
+     'credentials' => RECAPTCHA_KEYFILE
   ]);
   $projectName = $client->projectName($project);
 
