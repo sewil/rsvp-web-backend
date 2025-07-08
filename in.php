@@ -78,7 +78,7 @@ try {
 
     log_info("User $username ($userid) voted successfully from IP $voterIP ($requestIP)");
     http_response_code(200);
-} catch (Exception $e) {
+} catch (Throwable $e) {
     log_error("Server error: " . $e->getMessage());
     http_response_code(500);
     exit("Server error, please try again later.");

@@ -80,7 +80,7 @@ try {
         'referral_code' => $userRow['referral_code'],
         'token' => $token,
     ]);
-} catch (Exception $e) {
+} catch (Throwable $e) {
     http_response_code(500);
     echo json_encode(['error' => 'Server error. Please try again later.']);
 }

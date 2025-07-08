@@ -63,7 +63,7 @@ try {
 
     http_response_code(200);
     echo json_encode(["success" => true, "message" => "Account verified successfully. You may now login with your account credentials."]);
-} catch (Exception $e) {
+} catch (Throwable $e) {
     http_response_code(500);
     log_error($e);
     echo json_encode(["error" => "Server error. Please try again later."]);

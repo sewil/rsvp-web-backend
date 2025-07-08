@@ -77,7 +77,7 @@ try {
     echo json_encode([
         "referral_code" => $referralCode
     ]);
-} catch (Exception $e) {
+} catch (Throwable $e) {
     http_response_code(500);
     log_discord("Server error on refer: " . $e->getMessage());
     echo json_encode(["error" => "Something went wrong. Please try again later."]);

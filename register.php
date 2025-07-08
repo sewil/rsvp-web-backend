@@ -168,7 +168,7 @@ try {
   http_response_code(400);
   log_error("Bad request: " . $e->getMessage());
   echo json_encode(["error" => "Bad request. Please try again later."]);
-} catch (Exception $e) {
+} catch (Throwable $e) {
     log_error("Register error: " . $e->getMessage());
     http_response_code(500);
     echo json_encode(['error' => 'Server error. Please try again later.']);

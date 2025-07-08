@@ -76,7 +76,7 @@ try {
 
     http_response_code(200);
     echo json_encode(["success" => true, "message" => "Password updated successfully. You may now login with your new password."]);
-} catch (Exception $e) {
+} catch (Throwable $e) {
     http_response_code(500);
     log_discord("Reset password verify server error: " . $e->getMessage());
     echo json_encode(["error" => "Server error. Please try again later."]);

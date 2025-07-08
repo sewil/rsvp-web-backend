@@ -68,7 +68,7 @@ try {
         "success" => true,
         "message" => "Verification email sent. Please check your inbox to verify your account.",
     ]);
-} catch (Exception $e) {
+} catch (Throwable $e) {
     log_error("Server error: " . $e->getMessage());
     http_response_code(500);
     echo json_encode(["error" => "Server error. Please try again later."]);

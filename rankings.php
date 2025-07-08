@@ -75,7 +75,7 @@ try {
         "beginner" => $rankings_beginner,
         "monsterbook" => $rankings_monsterbook,
     ]);
-} catch (Exception $e) {
+} catch (Throwable $e) {
     log_error("Server error: " . $e->getMessage());
     http_response_code(500);
     echo json_encode(["error" => "Server error, please try again later."]);

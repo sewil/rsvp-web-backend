@@ -124,7 +124,7 @@ try {
         'referral_code' => $userRow['referral_code'],
         'token' => $token,
     ]);
-} catch (Exception $e) {
+} catch (Throwable $e) {
     http_response_code(500);
     log_error("Server error on login: " . $e->getMessage());
     echo json_encode(['error' => 'Server error. Please try again later.']);

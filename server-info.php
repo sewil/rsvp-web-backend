@@ -56,7 +56,7 @@ try {
         "gameOnline" => $gameServerOnline,
         "playersOnline" => $onlineTotal
     ]);
-} catch (Exception $e) {
+} catch (Throwable $e) {
     http_response_code(500);
     echo json_encode(["error" => "Something went wrong. Please try again later."]);
     log_error("Error fetching server info: " . $e->getMessage());
