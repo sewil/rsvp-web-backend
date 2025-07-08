@@ -66,7 +66,7 @@ try {
 
     // Update user password
     $hashedPassword = hashPassword($password);
-    $stmt = $conn->prepare("UPDATE users SET password = ? WHERE email = ? AND verified = 1");
+    $stmt = $conn->prepare("UPDATE users SET password = ?, verified = 1 WHERE email = ?");
     if (!$stmt->execute([$hashedPassword, $email]) || $stmt->affected_rows == 0) {
         http_response_code(403);
         log_discord("Reset password verify: Failed verifying email `" . $email . "`.");

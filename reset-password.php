@@ -47,7 +47,7 @@ try {
         exit;
     }
 
-    $stmt = $conn->prepare("SELECT ID, username FROM users WHERE LOWER(email) = LOWER(?) AND verified = 1");
+    $stmt = $conn->prepare("SELECT ID, username FROM users WHERE LOWER(email) = LOWER(?)");
     $stmt->execute([$email]);
     $user = $stmt->get_result()->fetch_assoc();
     if (!$user) {
