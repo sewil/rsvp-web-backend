@@ -36,13 +36,6 @@ try {
     $username = validateInput($input['username']);
     $password = $input['password'];
     $securityPin = $input['security_pin'] ?? NULL;
-    
-    // Validate password
-    if (!validatePassword($password)) {
-        http_response_code(400);
-        echo json_encode(['error' => 'Invalid password']);
-        exit;
-    }
 
     // $assessment = create_assessment(
     //     RECAPTCHA_SECRET,
