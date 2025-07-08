@@ -124,6 +124,7 @@ try {
             "message" => "Verification email sent. Please check your inbox to verify your account.",
         ]);
     } else {
+        log_error("Register resend error: Failed to send verification email to `" . $email . "`");
         http_response_code(500);
         echo json_encode(["error" => "Failed to send verification email."]);
     }

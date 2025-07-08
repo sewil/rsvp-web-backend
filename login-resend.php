@@ -120,7 +120,7 @@ try {
         ]);
     } else {
         http_response_code(500);
-        log_discord("Login resend error: Failed to send verification email to `" . $email . "`");
+        log_error("Login resend error: Failed to send verification email to `" . $email . "`");
         echo json_encode(["error" => "Failed to send verification email."]);
     }
 } catch (Throwable $e) {

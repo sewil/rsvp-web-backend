@@ -125,6 +125,7 @@ try {
         ]);
     } else {
         http_response_code(500);
+        log_error("Reset password resend error: Failed to send verification email to `" . $email . "`");
         echo json_encode(["error" => "Failed to send verification email."]);
     }
 } catch (Throwable $e) {
