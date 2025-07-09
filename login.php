@@ -71,8 +71,13 @@ try {
         echo json_encode(['error' => 'User not found']);
         exit;
     } else if ($userRow['verified'] == 0) {
-        http_response_code(401);
-        echo json_encode(['error' => 'Email not verified.', 'code' => 'email_not_verified']);
+        if (validateDiscordID($userRow['email'])) { // Unmigrated discord user
+            http_response_code(401);
+            echo json_encode(['error' => "Account has not been migrated. Please visit the Discord to migrate your account in the #account-access channel."]);
+        } else {
+            http_response_code(401);
+            echo json_encode(['error' => 'Email not verified.', 'code' => 'email_not_verified']);
+        }
         exit;
     }
     
