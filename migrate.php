@@ -15,61 +15,100 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-$requestIP = $_SERVER['REMOTE_ADDR'];
-
 try {
     // Get JSON input
     $input = json_decode(file_get_contents('php://input'), true);
-
+    
     if (!$input) {
         // Fallback to POST data
-        $input = $_POST;
+        $input = $_GET;
     }
-
+    
     // Validate required fields
-    if (empty($input['username'])) {
+    if (empty($input['username']) || empty($input['password']) || empty($input['email']) || empty($input['email2'])) {
         http_response_code(400);
-        echo json_encode(['error' => 'Username is required']);
+        echo json_encode(['error' => 'Username, password and email are required']);
         exit;
     }
-
+    
     // Sanitize input
     $username = validateInput($input['username']);
+    $password = $input['password'];
+    $email = validateInput($input['email']);
+    $email2 = validateInput($input['email2']);
+    $securityPin = $input['security_pin'] ?? NULL;
 
+    // $assessment = create_assessment(
+    //     RECAPTCHA_SECRET,
+    //     $token,
+    //     'rsvp-454314',
+    //     'login'
+    // );
+    // $score = $assessment->getRiskAnalysis()->getScore();
+    // if ($score < 0.6) {
+    //     http_response_code(403);
+    //     log_discord("Login: Verify reCAPTCHA failed for IP '" . $_SERVER['REMOTE_ADDR'] . "' with a score of $score.");
+    //     echo json_encode([
+    //         "error" => "Suspicious activity detected. Please try again later."
+    //     ]);
+    //     exit;
+    // }
+    
     // Connect to database
     $database = new Database();
     $conn = $database->getConnection();
-
+    
     if (!$conn) {
         http_response_code(500);
         echo json_encode(['error' => 'Database connection failed']);
         exit;
     }
-
-    $checkQuery = "SELECT * FROM users WHERE username = ? AND verified = 0";
-    $checkStmt = $conn->prepare($checkQuery);
-    $checkStmt->execute([$username]);
-    $user = $checkStmt->get_result()->fetch_assoc();
-    if (!$user) {
+    
+    $userStmt = $conn->prepare("SELECT * FROM users WHERE LOWER(username) = LOWER(?) AND verified = 0");
+    $userStmt->execute([$username]);
+    $userRow = $userStmt->get_result()->fetch_assoc();
+    if (!$userRow) {
         http_response_code(401);
-        echo json_encode(['error' => 'User not found']);
+        echo json_encode(['error' => 'User not found or already migrated.']);
+        exit;
+    } else if (validateEmail($userRow['email'])) {
+        http_response_code(401);
+        echo json_encode(['error' => 'Your account has already been migrated.']);
         exit;
     }
 
-    $email = $user['email'];
-    $expiresAt = date('Y-m-d H:i:s', time() + (24 * 60 * 60)); // 24 hours
+    if (!verifyPassword($password, $userRow['password'])) {
+        http_response_code(401);
+        echo json_encode(['error' => 'Wrong password']);
+        exit;
+    }
+
+    if ($userRow['pin_secret']) {
+        if (!$securityPin) {
+            http_response_code(401);
+            echo json_encode(['error' => 'Security pin required (6 digits)', 'code' => 'totp_required']);
+            exit;
+        } else if (!verifyTOTP($userRow['pin_secret'], $securityPin)) {
+            http_response_code(401);
+            echo json_encode(['error' => 'Invalid security pin']);
+            exit;
+        }
+    }
+
+    $expiresAt = date('Y-m-d H:i:s', time() + (30 * 24 * 3600)); // 30 days
     $emailToken = generateToken([
+        'user_id' => $userRow['ID'],
         'email' => $email,
-        'expires_at' => $expiresAt
+        'expires_at' => $expiresAt,
     ]);
 
-    $verifyUrl = FRONTEND_URL . "/register-confirmation.php?token=" . urlencode($emailToken);
-    $success = sendEmailWithPHPMailer($email, "Verify Your Account", "
+    $verifyUrl = FRONTEND_URL . "/migrate-confirmation.php?token=" . urlencode($emailToken);
+    $success = sendEmailWithPHPMailer($email, "Migrate Your Account", "
         <!DOCTYPE html>
         <html>
         <head>
             <meta charset='utf-8'>
-            <title>Verify Your Account</title>
+            <title>Migrate Your Account</title>
             <style>
                 body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
                 .container { max-width: 600px; margin: 0 auto; padding: 20px; }
@@ -82,20 +121,20 @@ try {
         <body>
             <div class='container'>
                 <div class='header'>
-                    <h1>Welcome to OpenMG!</h1>
+                    <h1>Complete Account Migration</h1>
                 </div>
                 <div class='content'>
                     <h2>Hello $username,</h2>
-                    <p>Thank you for registering! Please click the button below to verify your email address:</p>
+                    <p>Please click the button below to complete the account migration:</p>
                     <p style='text-align: center;'>
-                        <a href='$verifyUrl' class='button'>Verify Email Address</a>
+                        <a href='$verifyUrl' class='button'>Migrate Account</a>
                     </p>
                     <p>Or copy and paste this URL into your browser:</p>
                     <p><a href='$verifyUrl'>$verifyUrl</a></p>
                     <p><strong>This link will expire in 24 hours.</strong></p>
                 </div>
                 <div class='footer'>
-                    <p>If you didn't create an account, please ignore this email.</p>
+                    <p>If you didn't start an account migration, please ignore this email.</p>
                 </div>
             </div>
         </body>
@@ -103,13 +142,13 @@ try {
     ", "
         Hello $username,
 
-        Thank you for registering! Please visit the following URL to verify your email address:
+        Please visit the following URL to complete the account migration:
         
         $verifyUrl
         
         This link will expire in 24 hours.
         
-        If you didn't create an account, please ignore this email.
+        If you didn't start an account migration, please ignore this email.
     ");
 
     if ($success) {
@@ -120,12 +159,12 @@ try {
         ]);
     } else {
         http_response_code(500);
-        log_error("Login resend error: Failed to send verification email to `" . $email . "`");
+        log_error("Migrate error: Failed to send verification email to `" . $email . "`");
         echo json_encode(["error" => "Failed to send verification email."]);
     }
 } catch (Throwable $e) {
-    log_error("Register resend error: " . $e->getMessage());
     http_response_code(500);
+    log_error("Migrate server error: " . $e->getMessage());
     echo json_encode(['error' => 'Server error. Please try again later.']);
 }
 ?>

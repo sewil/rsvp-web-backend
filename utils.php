@@ -32,7 +32,7 @@ function validateEmail($email) {
 }
 
 function validateDiscordID($value) {
-    return preg_match('/^\d{18}$/', $value);
+    return preg_match('/^\d{17,19}$/', $value);
 }
 
 function validateDateOfBirth($dateOfBirth) {
