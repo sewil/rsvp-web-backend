@@ -47,14 +47,12 @@ try {
         exit;
     }
 
-    $stmt = $conn->prepare("SELECT ID, username FROM users WHERE LOWER(email) = LOWER(?)");
+    $stmt = $conn->prepare("SELECT * FROM users WHERE LOWER(email) = LOWER(?)");
     $stmt->execute([$email]);
     $user = $stmt->get_result()->fetch_assoc();
     if (!$user) {
-        log_discord("Reset password: Sent fake success for invalid email `" . $email . "`. IP " . "`"  . $_SERVER['REMOTE_ADDR'] . "`");
-        http_response_code(200);
-        // Send fake success so we don't give away what emails exist in the DB.
-        echo json_encode(["success" => true, "message" => "Verification email sent. Please check your inbox to verify your account."]);
+        http_response_code(401);
+        echo json_encode(["error" => "Couldn't find a user with that email."]);
         exit;
     }
     $expiresAt = date('Y-m-d H:i:s', time() + (24 * 60 * 60)); // 24 hours
