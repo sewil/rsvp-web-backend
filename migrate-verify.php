@@ -54,7 +54,7 @@ try {
         exit;
     }
 
-    $updateStmt = $conn->prepare("UPDATE users SET verified = 1, email = ? WHERE ID = ? AND verified = 0");
+    $updateStmt = $conn->prepare("UPDATE users SET verified = 1, email = ? WHERE ID = ?");
     if (!$updateStmt->execute([$decryptedToken['email'], $decryptedToken['user_id']]) || $updateStmt->affected_rows == 0) {
         http_response_code(403);
         log_error("Migration error for user id " . $decryptedToken['user_id'] . " with email " . $decryptedToken['email']);

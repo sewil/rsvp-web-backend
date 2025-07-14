@@ -64,16 +64,16 @@ try {
         exit;
     }
     
-    $userStmt = $conn->prepare("SELECT * FROM users WHERE LOWER(username) = LOWER(?) AND verified = 0");
+    $userStmt = $conn->prepare("SELECT * FROM users WHERE LOWER(username) = LOWER(?)");
     $userStmt->execute([$username]);
     $userRow = $userStmt->get_result()->fetch_assoc();
     if (!$userRow) {
         http_response_code(401);
-        echo json_encode(['error' => 'User not found or already migrated.']);
+        echo json_encode(['error' => 'User not found.']);
         exit;
     } else if (validateEmail($userRow['email'])) {
         http_response_code(401);
-        echo json_encode(['error' => 'Your account has already been migrated.']);
+        echo json_encode(['error' => 'Account has already been migrated.']);
         exit;
     }
 

@@ -70,14 +70,12 @@ try {
         http_response_code(401);
         echo json_encode(['error' => 'User not found']);
         exit;
+    } else if (validateDiscordID($userRow['email'])) { // Unmigrated discord user
+        http_response_code(401);
+        echo json_encode(['error' => "Your account has not been migrated. Please enter an email to use for your account.", "code" => "account_not_migrated"]);
     } else if ($userRow['verified'] == 0) {
-        if (validateDiscordID($userRow['email'])) { // Unmigrated discord user
-            http_response_code(401);
-            echo json_encode(['error' => "Your account has not been migrated. Please enter an email to use for your account.", "code" => "account_not_migrated"]);
-        } else {
-            http_response_code(401);
-            echo json_encode(['error' => 'Email not verified.', 'code' => 'email_not_verified']);
-        }
+        http_response_code(401);
+        echo json_encode(['error' => 'Email not verified.', 'code' => 'email_not_verified']);
         exit;
     }
     
