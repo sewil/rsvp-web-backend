@@ -82,6 +82,7 @@ try {
     ]);
 } catch (Throwable $e) {
     http_response_code(500);
+    log_error("Server error on auth: " . $e->getMessage());
     echo json_encode(['error' => 'Server error. Please try again later.']);
 }
 ?>
