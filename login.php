@@ -120,6 +120,7 @@ try {
         'date_of_birth' => $userRow['char_delete_password'],
         'referral_code' => $userRow['referral_code'],
         'token' => $token,
+        'expires_at' => $expiresAt
     ]);
 } catch (Throwable $e) {
     http_response_code(500);
