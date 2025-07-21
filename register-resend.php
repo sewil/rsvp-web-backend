@@ -68,56 +68,7 @@ try {
         'expires_at' => $expiresAt
     ]);
 
-    $verifyUrl = FRONTEND_URL . "/register-confirmation.php?token=" . urlencode($emailToken);
-    $success = sendEmailWithPHPMailer($email, "Verify Your Account", "
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset='utf-8'>
-            <title>Verify Your Account</title>
-            <style>
-                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-                .header { background: #007bff; color: white; padding: 20px; text-align: center; }
-                .content { padding: 20px; background: #f9f9f9; }
-                .button { display: inline-block; padding: 12px 24px; background: #28a745; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
-                .footer { padding: 20px; text-align: center; font-size: 12px; color: #666; }
-            </style>
-        </head>
-        <body>
-            <div class='container'>
-                <div class='header'>
-                    <h1>Welcome to OpenMG!</h1>
-                </div>
-                <div class='content'>
-                    <h2>Hello $username,</h2>
-                    <p>Thank you for registering! Please click the button below to verify your email address:</p>
-                    <p style='text-align: center;'>
-                        <a href='$verifyUrl' class='button'>Verify Email Address</a>
-                    </p>
-                    <p>Or copy and paste this URL into your browser:</p>
-                    <p><a href='$verifyUrl'>$verifyUrl</a></p>
-                    <p><strong>This link will expire in 24 hours.</strong></p>
-                </div>
-                <div class='footer'>
-                    <p>If you didn't create an account, please ignore this email.</p>
-                </div>
-            </div>
-        </body>
-        </html>
-    ", "
-        Hello $username,
-
-        Thank you for registering! Please visit the following URL to verify your email address:
-        
-        $verifyUrl
-        
-        This link will expire in 24 hours.
-        
-        If you didn't create an account, please ignore this email.
-    ");
-
-    if ($success) {
+    if (send_register_email($username, $email)) {
         http_response_code(200);
         echo json_encode([
             "success" => true,

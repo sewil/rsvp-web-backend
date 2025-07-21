@@ -5,6 +5,7 @@ require_once 'config.php';
 require_once 'utils.php';
 require_once 'crypto.php';
 require_once 'logger.php';
+require_once 'curl.php';
 
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
@@ -29,14 +30,15 @@ try {
     }
 
     // Validate required fields
-    if (empty($input['captchaToken']) || empty($input['username']) || empty($input['email']) || empty($input['password'])) {
+    if (empty($input['captchaToken']) || empty($input['username']) || empty($input['email']) || empty($input['password']) || empty($input['date_of_birth'])) {
         http_response_code(400);
-        echo json_encode(['error' => 'Username, email, and password are required']);
+        echo json_encode(['error' => 'Username, email, date of birth, and password are required']);
         exit;
     }
 
     // Sanitize input
     $captchaToken = $input['captchaToken'];
+    $captchaType = $input['captchaType'];
     $username = validateInput($input['username']);
     $email = validateInput($input['email']);
     $dateOfBirth = validateInput($input['date_of_birth']);
@@ -80,20 +82,42 @@ try {
         exit;
     }
 
-    $assessment = create_assessment(
-        RECAPTCHA_SECRET,
-        $captchaToken,
-        'rsvp-454314',
-        'signup'
-    );
-    $score = $assessment->getRiskAnalysis()->getScore();
-    if ($score < 0.6) {
-        http_response_code(403);
-        log_discord("Register: Verify reCAPTCHA failed for IP '" . $_SERVER['REMOTE_ADDR'] . "' with a score of $score.");
-        echo json_encode([
-            "error" => "Suspicious activity detected. Please try again later."
+    if ($captchaType != 'v2') {
+        $assessment = create_assessment(
+            RECAPTCHA_V3_SECRET,
+            $captchaToken,
+            'rsvp-454314',
+            'signup'
+        );
+        $score = $assessment->getRiskAnalysis()->getScore();
+        if ($score < 0.6) {
+            http_response_code(403);
+            log_discord("Register: Verify reCAPTCHA v3 failed for IP '" . $_SERVER['REMOTE_ADDR'] . "' with a score of $score.");
+            echo json_encode([
+                "error" => "Suspicious activity detected. Please try again later.",
+                "error_code" => "captcha_v3_failed"
+            ]);
+            exit;
+        }
+    } else {
+        $verify = curl_post("https://www.google.com/recaptcha/api/siteverify", [
+            "secret" => RECAPTCHA_V2_SECRET,
+            "response" => $captchaToken
         ]);
-        exit;
+        if (!$verify) {
+            http_response_code(500);
+            log_error("Server error when verifying recaptcha v2 ");
+            echo json_encode(["error" => "Something went wrong. Please try again later."]);
+            exit;
+        }
+        $captcha_success = json_decode($verify);
+        
+        if (!$captcha_success->success) {
+            http_response_code(403);
+            log_discord("Register: Verify reCAPTCHA v2 failed for IP '" . $_SERVER['REMOTE_ADDR'] . "'.");
+            echo json_encode(["error" => "Suspicious activity detected. Please try again later."]);
+            exit;
+        }
     }
 
     // Connect to database
@@ -130,6 +154,13 @@ try {
             echo json_encode(['error' => 'Invalid referral code']);
             exit;
         }
+    }
+
+    // Check valid email
+    if (!send_register_email($username, $email)) {
+        http_response_code(401);
+        echo json_encode(["error" => "Registration failed. Please enter a valid email."]);
+        exit;
     }
 
     // Insert user in table
